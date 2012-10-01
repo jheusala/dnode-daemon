@@ -6,6 +6,8 @@ var config = {
 	logfile: 'run/backend.log'
 };
 
+var m_counter = 0;
+
 var backend_logic = {
     transform : function (s, cb) {
 		cb(s.replace(/[aeiou]{2,}/, 'oo').toUpperCase())
@@ -15,7 +17,6 @@ var backend_logic = {
 	}
 };
 
-var init = require('init');
 var fs = require('fs');
 var server = undefined;
 
@@ -23,11 +24,12 @@ function do_cleanup() {
 	fs.exists(config.sockfile, function(exists) {
 		if(!exists) return;
 		fs.unlink(config.sockfile, function(err) {
-			if(err) console.error('Failed to unlink ' + config.sockfile +': ' + err);
+			if(err) process.stderr.write('Failed to unlink ' + config.sockfile +': ' + err + "\n");
 		});
 	});
 }
 
+var init = require('init');
 function do_start(cb) {
 	init.start({
 	    pidfile : config.pidfile,
@@ -35,14 +37,13 @@ function do_start(cb) {
 	    run     : function () {
 			var dnode = require('dnode');
 			var net = require('net');
-			var m_counter = 0;
 			server = net.createServer(function (c) {
 			    var d = dnode(backend_logic);
 			    c.pipe(d).pipe(c);
 			});
 			server.listen(config.sockfile);
 			server.on('error', function(err) {
-				console.error('Error: ' + err);
+				process.stderr.write('Error: ' + err + "̛\n");
 			});
 			server.on('close', function() {
 				do_cleanup();
@@ -76,13 +77,21 @@ function do_connect(cb) {
 	var c = net.connect(config.sockfile);
 	c.on('error', function(e) {
 		if( (e.code == 'ECONNREFUSED') || (e.code == 'ENOENT') ) {
-			console.error('Failed to connect, trying to restart service...');
-			do_start(function(err, pid) {
-				if(err) {
-					cb('Failed to start service: ' + err);
+			process.stderr.write('Failed to connect, trying to restart service...\n');
+
+			var spawn = require('child_process').spawn,
+			    child = spawn(process.argv[0], [process.argv[1], 'start']);
+			child.on('error', function(err) {
+				process.stderr.write('Error: ' + err + "\n");
+			});
+			child.on('exit', function(code) {
+				if(code !== 0) {
+					cb('Failed to start service');
 				} else {
-					console.error('Restarted service');
-					do_connect(cb);
+					process.stderr.write('Service restarted.\n');
+					setTimeout(function() {
+						do_connect(cb);
+					}, 250);
 				}
 			});
 		} else {
@@ -97,32 +106,35 @@ function do_connect(cb) {
 if(process.argv[2] === 'start') {
 	do_start(function(err, pid, wasRunning) {
 		if(err) {
-			console.error('Failed to start service: ' + err);
+			process.stderr.write('Failed to start service: ' + err + "\n");
 		} else if(wasRunning) {
-			console.log('Service was running already.');
+			process.stderr.write('Service was running already.\n');
 		} else {
-			console.log('Started service.');
+			process.stderr.write('Started service.\n');
 		}
 	});
 } else if(process.argv[2] === 'status') {
 	init.status(config.pidfile, function(results) {
-		console.log(JSON.stringify(results));
+		process.stderr.write(JSON.stringify(results) + "\n");
 	});
 } else if(process.argv[2] === 'stop') {
 	do_stop(function(stopped) {
 		if(!stopped) {
-			console.error('Failed to stop service!');
+			process.stderr.write('Failed to stop service!\n');
 		} else {
-			console.log('Service stopped.');
+			process.stderr.write('Service stopped.\n');
 		}
 	});
 } else {
+	var stderr = process.stderr,
+	    stdout = process.stdout,
+	    stdin = process.stdin;
 	do_connect(function(err, c) {
 		if(err) {
-			console.error('Error: ' + err);
+			stderr.write('Error: ' + err + "\n");
 		} else {
-			process.stdin.resume();
-			process.stdin.pipe(c).pipe(process.stdout);
+			stdin.resume();
+			stdin.pipe(c).pipe(stdout);
 		}
 	});
 }
