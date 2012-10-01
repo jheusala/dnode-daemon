@@ -1,21 +1,15 @@
 /* */
 
+var homedir = process.env.HOME || '.';
+var rcdir = homedir + '/.server';
+
 var config = {
-	sockfile: 'run/backend.sock',
-	pidfile: 'run/backend.pid',
-	logfile: 'run/backend.log'
+	sockfile: rcdir + '/backend.sock',
+	pidfile: rcdir + '/backend.pid',
+	logfile: rcdir + '/backend.log'
 };
 
-var m_counter = 0;
-
-var backend_logic = {
-    transform : function (s, cb) {
-		cb(s.replace(/[aeiou]{2,}/, 'oo').toUpperCase())
-    },
-	counter: function(cb) {
-		cb(m_counter++);
-	}
-};
+var backend_logic = require('./backend.js');
 
 var fs = require('fs');
 var server = undefined;
@@ -31,6 +25,11 @@ function do_cleanup() {
 
 var init = require('init');
 function do_start(cb) {
+
+	if(!fs.existsSync(rcdir)) {
+		fs.mkdirSync(rcdir);
+	}
+
 	init.start({
 	    pidfile : config.pidfile,
 	    logfile : config.logfile,
