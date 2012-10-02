@@ -3,6 +3,7 @@
   "name": "remote-daemon",
   "description": "Remote daemon",
   "version": "0.0.1",
+  "main": "src/index.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/jheusala/remote-daemon.git"

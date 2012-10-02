@@ -10,8 +10,11 @@ function init_config(config) {
 	if(!config.homedir) {
 		config.homedir = process.env.HOME || '.';
 	}
+	if(!config.appname) {
+		config.appname = 'remoted';
+	}
 	if(!config.rcdir) {
-		config.rcdir = config.homedir + '/.server';
+		config.rcdir = config.homedir + '/.' + config.appname;
 	}
 	if(!config.sockfile) {
 		config.sockfile = config.rcdir + '/backend.sock';
