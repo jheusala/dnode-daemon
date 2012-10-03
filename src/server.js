@@ -91,9 +91,9 @@ mod.createServer = function(config, backend_logic) {
 	function do_connect(cb) {
 		var c = net.connect(config.sockfile);
 		c.on('error', function(e) {
-			if( (e.code == 'ECONNREFUSED') || (e.code == 'ENOENT') ) {
+			if( (e.code === 'ECONNREFUSED') || (e.code === 'ENOENT') || (e.code === 'EADDRINUSE') ) {
 				process.stderr.write('Failed to connect, trying to restart service...\n');
-	
+				
 				var spawn = require('child_process').spawn,
 				    child = spawn(process.argv[0], [process.argv[1], 'start']);
 				child.on('error', function(err) {
