@@ -15,5 +15,10 @@
     "init":"*",
     "dnode":"*"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "lint": "*"
+  },
+  "scripts": {
+    "lint": "./run-lint.sh"
+  }
 }
